@@ -2,6 +2,6 @@
 venv/
 __pycache__/
 *.pyc
-saved_model/
+# saved_model/
 dataset/
 dataset_split/
