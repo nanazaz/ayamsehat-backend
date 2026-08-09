@@ -158,15 +158,15 @@ async def run_groq_analysis(img_bytes, jenis_unggas, gejala, berat) -> dict:
             ]}],
             max_tokens=1024,
         )
-        print("🔍 RAW GROQ RESPONSE:", repr(val_resp.choices[0].message.content))
-val_raw = val_resp.choices[0].message.content.strip().replace("```json","").replace("```","").strip()
         val_raw = val_resp.choices[0].message.content.strip().replace("```json","").replace("```","").strip()
+        print("🔍 RAW GROQ VALIDATION RESPONSE:", repr(val_raw))
         try:
             val        = json.loads(val_raw)
             is_poultry = val.get("is_poultry", True)
             tipe_foto  = val.get("tipe_foto", "unggas")
             alasan     = val.get("alasan", "")
-        except:
+        except Exception as parse_err:
+            print(f"⚠️ Gagal parse validasi JSON: {parse_err}")
             is_poultry = True
             tipe_foto  = "unggas"
             alasan     = ""
@@ -231,7 +231,8 @@ Balas HANYA JSON ini (tanpa teks lain):
             ]}],
             max_tokens=2048,
         )
-        raw    = resp.choices[0].message.content.strip().replace("```json","").replace("```","").strip()
+        raw = resp.choices[0].message.content.strip().replace("```json","").replace("```","").strip()
+        print("🔍 RAW GROQ ANALYSIS RESPONSE:", repr(raw))
         result = json.loads(raw)
         result.setdefault("is_poultry", True)
         result.setdefault("pesan_validasi", "")
