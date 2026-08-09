@@ -156,7 +156,7 @@ async def run_groq_analysis(img_bytes, jenis_unggas, gejala, berat) -> dict:
                 {"type": "text", "text": 'Apakah gambar ini menunjukkan: (1) unggas/ayam/bebek/burung ternak, ATAU (2) kotoran/feses unggas ternak? Kedua jenis foto ini valid untuk diagnosa penyakit unggas. Jawab HANYA JSON: {"is_poultry": true/false, "tipe_foto": "unggas/kotoran/bukan_keduanya", "alasan": "penjelasan singkat bahasa Indonesia"}'},
                 {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}}
             ]}],
-            max_tokens=200,
+            max_tokens=1024,
         )
         val_raw = val_resp.choices[0].message.content.strip().replace("```json","").replace("```","").strip()
         try:
@@ -227,7 +227,7 @@ Balas HANYA JSON ini (tanpa teks lain):
                 {"type": "text",      "text": prompt},
                 {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}}
             ]}],
-            max_tokens=1024,
+            max_tokens=2048,
         )
         raw    = resp.choices[0].message.content.strip().replace("```json","").replace("```","").strip()
         result = json.loads(raw)
