@@ -107,6 +107,19 @@ def load_label_map() -> dict:
             return json.load(f)
     return {}
 
+def strip_reasoning(text: str) -> str:
+    """Qwen (reasoning model) kadang mengeluarkan blok <think>...</think>
+    sebelum jawaban akhir. Buang blok itu, ambil JSON setelahnya."""
+    if "</think>" in text:
+        text = text.split("</think>")[-1]
+    text = text.strip().replace("```json", "").replace("```", "").strip()
+    # Ambil bagian dari '{' pertama sampai '}' terakhir, jaga-jaga ada teks nyasar
+    start = text.find("{")
+    end   = text.rfind("}")
+    if start != -1 and end != -1:
+        text = text[start:end+1]
+    return text
+
 async def run_disease_prediction(img_bytes: bytes) -> dict:
     if cnn_model is None:
         raise HTTPException(503, "CNN model belum dimuat.")
@@ -158,7 +171,7 @@ async def run_groq_analysis(img_bytes, jenis_unggas, gejala, berat) -> dict:
             ]}],
             max_tokens=1024,
         )
-        val_raw = val_resp.choices[0].message.content.strip().replace("```json","").replace("```","").strip()
+        val_raw = strip_reasoning(val_resp.choices[0].message.content)
         print("🔍 RAW GROQ VALIDATION RESPONSE:", repr(val_raw))
         try:
             val        = json.loads(val_raw)
@@ -231,7 +244,7 @@ Balas HANYA JSON ini (tanpa teks lain):
             ]}],
             max_tokens=2048,
         )
-        raw = resp.choices[0].message.content.strip().replace("```json","").replace("```","").strip()
+        raw = strip_reasoning(resp.choices[0].message.content)
         print("🔍 RAW GROQ ANALYSIS RESPONSE:", repr(raw))
         result = json.loads(raw)
         result.setdefault("is_poultry", True)
