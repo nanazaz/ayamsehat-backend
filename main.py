@@ -29,7 +29,7 @@ DISEASE_MODEL_PATH = Path("./saved_model/best_model.h5")
 DISEASE_LABEL_PATH = Path("./saved_model/label_map.json")
 IMG_SIZE           = (224, 224)
 GROQ_KEY           = os.getenv("GROQ_API_KEY", "")
-GROQ_MODEL         = "meta-llama/llama-4-scout-17b-16e-instruct"
+GROQ_MODEL         = "qwen/qwen3.6-27b"
 
 DISEASE_INFO = {
     "Healthy": {
