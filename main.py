@@ -166,7 +166,7 @@ async def run_groq_analysis(img_bytes, jenis_unggas, gejala, berat) -> dict:
         val_resp = client.chat.completions.create(
             model=GROQ_MODEL,
             messages=[{"role": "user", "content": [
-                {"type": "text", "text": 'Apakah gambar ini menunjukkan: (1) unggas/ayam/bebek/burung ternak, ATAU (2) kotoran/feses unggas ternak? Kedua jenis foto ini valid untuk diagnosa penyakit unggas. Jawab HANYA JSON: {"is_poultry": true/false, "tipe_foto": "unggas/kotoran/bukan_keduanya", "alasan": "penjelasan singkat bahasa Indonesia"}'},
+                {"type": "text", "text": 'Kamu ahli identifikasi foto peternakan unggas. Perhatikan gambar ini dengan SANGAT teliti. Apakah gambar ini menunjukkan SALAH SATU dari: (1) unggas/ayam/bebek/burung ternak (baik hidup, close-up, atau bagian tubuhnya), ATAU (2) kotoran/feses unggas (di lantai, tanah, kandang, dengan atau tanpa unggasnya terlihat). PENTING: kalau kamu melihat ciri-ciri kotoran unggas (bentuk, warna, tekstur, bagian putih/urat) di gambar, itu HARUS dianggap is_poultry=true dan tipe_foto="kotoran", walaupun tidak ada unggas hidup yang terlihat di foto. Hanya jawab false jika gambar benar-benar tidak berkaitan sama sekali dengan unggas (misal: manusia, mobil, pemandangan, hewan lain). Jawab HANYA JSON: {"is_poultry": true/false, "tipe_foto": "unggas/kotoran/bukan_keduanya", "alasan": "penjelasan singkat bahasa Indonesia"}'},
                 {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}}
             ]}],
             max_tokens=1024,
