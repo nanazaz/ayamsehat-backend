@@ -158,6 +158,8 @@ async def run_groq_analysis(img_bytes, jenis_unggas, gejala, berat) -> dict:
             ]}],
             max_tokens=1024,
         )
+        print("🔍 RAW GROQ RESPONSE:", repr(val_resp.choices[0].message.content))
+val_raw = val_resp.choices[0].message.content.strip().replace("```json","").replace("```","").strip()
         val_raw = val_resp.choices[0].message.content.strip().replace("```json","").replace("```","").strip()
         try:
             val        = json.loads(val_raw)
