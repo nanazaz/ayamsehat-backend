@@ -1,0 +1,7 @@
+.env
+venv/
+__pycache__/
+*.pyc
+saved_model/
+dataset/
+dataset_split/
