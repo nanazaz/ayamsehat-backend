@@ -169,8 +169,9 @@ async def run_groq_analysis(img_bytes, jenis_unggas, gejala, berat) -> dict:
         }
     try:
         img = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+        img.thumbnail((768, 768))  # perkecil ukuran biar hemat token Groq
         buf = io.BytesIO()
-        img.save(buf, format="JPEG", quality=80)
+        img.save(buf, format="JPEG", quality=70)
         img_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
         client  = Groq(api_key=GROQ_KEY)
 
@@ -258,7 +259,7 @@ Balas HANYA JSON ini (tanpa teks lain):
                 {"type": "text",      "text": prompt},
                 {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}}
             ]}],
-            max_tokens=6000,
+            max_tokens=4000,
         )
         raw = strip_reasoning(resp.choices[0].message.content)
         print("🔍 RAW GROQ ANALYSIS RESPONSE:", repr(raw))
