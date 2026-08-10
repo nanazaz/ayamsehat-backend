@@ -10,7 +10,7 @@ from typing import Optional
 
 import numpy as np
 from PIL import Image
-from groq import Groq
+from groq import Groq, RateLimitError
 from dotenv import load_dotenv
 
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
@@ -120,6 +120,18 @@ def strip_reasoning(text: str) -> str:
         text = text[start:end+1]
     return text
 
+def groq_call_with_retry(client, max_retries=3, **kwargs):
+    """Panggil Groq API, retry otomatis kalau kena rate limit (429)."""
+    for attempt in range(max_retries):
+        try:
+            return client.chat.completions.create(**kwargs)
+        except RateLimitError as e:
+            if attempt == max_retries - 1:
+                raise
+            wait_time = 10 * (attempt + 1)
+            print(f"⏳ Rate limit kena, tunggu {wait_time}s sebelum coba lagi... (percobaan {attempt+1}/{max_retries})")
+            time.sleep(wait_time)
+
 async def run_disease_prediction(img_bytes: bytes) -> dict:
     if cnn_model is None:
         raise HTTPException(503, "CNN model belum dimuat.")
@@ -163,7 +175,8 @@ async def run_groq_analysis(img_bytes, jenis_unggas, gejala, berat) -> dict:
         client  = Groq(api_key=GROQ_KEY)
 
         # STEP 1 — Validasi foto: unggas ATAU kotoran unggas
-        val_resp = client.chat.completions.create(
+        val_resp = groq_call_with_retry(
+            client,
             model=GROQ_MODEL,
             messages=[{"role": "user", "content": [
                 {"type": "text", "text": 'Apakah gambar ini menunjukkan: (1) unggas/ayam/bebek/burung ternak, ATAU (2) kotoran/feses unggas ternak? Kedua jenis foto ini valid untuk diagnosa penyakit unggas. Jawab HANYA JSON: {"is_poultry": true/false, "tipe_foto": "unggas/kotoran/bukan_keduanya", "alasan": "penjelasan singkat bahasa Indonesia"}'},
@@ -223,6 +236,8 @@ Gejala       : {gejala if gejala else 'tidak ada'}
 
 {instruksi_visual}
 
+PENTING: Jangan berpikir terlalu panjang. Langsung analisis singkat lalu keluarkan JSON.
+
 Balas HANYA JSON ini (tanpa teks lain):
 {{
   "is_poultry": true,
@@ -236,17 +251,29 @@ Balas HANYA JSON ini (tanpa teks lain):
   "catatan_khusus": "catatan tambahan"
 }}"""
 
-        resp = client.chat.completions.create(
+        resp = groq_call_with_retry(
+            client,
             model=GROQ_MODEL,
             messages=[{"role": "user", "content": [
                 {"type": "text",      "text": prompt},
                 {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}}
             ]}],
-            max_tokens=2048,
+            max_tokens=6000,
         )
         raw = strip_reasoning(resp.choices[0].message.content)
         print("🔍 RAW GROQ ANALYSIS RESPONSE:", repr(raw))
-        result = json.loads(raw)
+        try:
+            result = json.loads(raw)
+        except json.JSONDecodeError:
+            print("⚠️ JSON analisis kepotong/rusak, pakai fallback minimal")
+            result = {
+                "estimasi_usia"      : "-",
+                "fase_pertumbuhan"   : "-",
+                "rentang_normal_berat": "-",
+                "kondisi_visual"     : [],
+                "rekomendasi_khusus" : [],
+                "catatan_khusus"     : "Analisis visual Groq tidak lengkap, coba upload ulang foto."
+            }
         result.setdefault("is_poultry", True)
         result.setdefault("pesan_validasi", "")
         result.setdefault("tipe_foto", tipe_foto)
